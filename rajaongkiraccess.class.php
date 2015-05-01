@@ -5,7 +5,7 @@
 */
 class RajaOngkirAccess
 {
-    public static $api_key = '91ecfdccb664c29f9a82115fbd674139';
+    public static $api_key = 'API_KEY_ANDA';
 
     function __construct($key)
     {

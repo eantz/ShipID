@@ -20,26 +20,20 @@ ShipID adalah sebuah proyek eksperimental yang belum sepenuhnya diuji keakuratan
 - Beberapa file Javascript ter-load otomatis di beberapa halaman admin
 
 ## Instalasi
+Sebelumnya, pastikan Woocommerce telah aktif terlebih dulu.
+Copy-kan seluruh folder ini ke dalam wp-content/plugins
+
 Supaya plugin dapat mengakses API dari RajaOngkir, maka masukkan API KEY dari RajaOngkir. Jika Anda belum mempunyainya, silahkan mendaftar pada web RajaOngkir
 
-Temukan baris kode berikut di file shipid.php, dan ganti sesuai dengan API KEY Anda : 
+Temukan baris kode berikut di file rajaongkiraccess.class.php, dan ganti sesuai dengan API KEY Anda : 
 ```php
-// line 191
-CURLOPT_HTTPHEADER => array(
-    "key: API_KEY_Anda" // ganti sesuai API KEY Anda
-),
-
-// line 238
-CURLOPT_HTTPHEADER => array(
-    "key: API_KEY_Anda" // ganti sesuai API KEY Anda
-),
+// line 8
+public static $api_key = 'API_KEY_ANDA';
 ```
 
-Kemudian temukan baris kode berikut di file shipid.class.php
-```php
-//line 10
-public $api_key = 'API_KEY_ANDA'; // ganti sesuai API KEY Anda
-```
+Aktifkan plugin lewat halaman plugin di wordpress.
+Aktifkan shipping method lewat halaman Woocommerce -> Settings -> Shipping -> ShipID
+Pilih Propinsi dan Kota dari seller
 
 
 ## TODO
