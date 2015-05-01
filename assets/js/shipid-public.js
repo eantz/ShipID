@@ -161,7 +161,7 @@ jQuery(function($) {
         $('#billing_state').html('');
 
         $.ajax({
-            url: shipidobj.url + '?action=shipid-get-selected-shipping-location',
+            url: shipidobj.url + '?action=shipid-get-selected-billing-location',
             type: 'GET',
             dataType: 'json'
         })

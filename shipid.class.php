@@ -1,26 +1,23 @@
 <?php
+// dependencies
+require_once plugin_dir_path(__FILE__) . '../woocommerce/includes/abstracts/abstract-wc-settings-api.php';
+require_once plugin_dir_path(__FILE__) . '../woocommerce/includes/abstracts/abstract-wc-shipping-method.php';
 
-
+/*
+* This class extending WC_Shipping_Method to allow register new shipping method
+*/
 class Shipid extends WC_Shipping_Method {
 
-    protected $plugin_name;
-
-    protected $version;
-
-    public $api_key = 'API_KEY_ANDA';
 
     public function __construct() {
 
-        $this->id                 = 'shipid';
-        $this->title       = __( 'ShipID' );
-        $this->method_description = __( 'ShipID is a shipping plugin for woocommerce. This shipping plugin only work if the origin and destination country is Indonesia. Shipid use JNE' ); // 
-        $this->enabled            = $this->get_option('enabled'); 
-        
-        $this->plugin_name = 'ShipID';
-        $this->version = '1.0.0';
+        $this->id                   = 'shipid';
+        $this->title                = __( 'ShipID', 'shipid' );
+        $this->method_description   = __( 'ShipID is a shipping plugin for woocommerce. This shipping plugin only work if the origin and destination country is Indonesia. Shipid use JNE', 'shipid' );
+        $this->enabled              = $this->get_option('enabled'); 
 
-        if(is_checkout())
-            add_action( 'wp_enqueue_scripts', array($this, 'public_assets') );    
+        // if(is_checkout())
+        //     add_action( 'wp_enqueue_scripts', array($this, 'public_assets') );    
 
         $this->init();
     }
@@ -35,14 +32,14 @@ class Shipid extends WC_Shipping_Method {
         $this->init_admin_page();
     }
 
-    function public_assets($hook)
-    {
-        wp_enqueue_style('shipid-public-style', plugin_dir_url(__FILE__) . 'assets/css/shipid-public.css');
+    // function public_assets($hook)
+    // {
+    //     wp_enqueue_style('shipid-public-style', plugin_dir_url(__FILE__) . 'assets/css/shipid-public.css');
 
-        wp_enqueue_script('shipid-public-js', plugin_dir_url(__FILE__) . 'assets/js/shipid-public.js', array('jquery', 'wc-checkout'), '1.0', true);
+    //     wp_enqueue_script('shipid-public-js', plugin_dir_url(__FILE__) . 'assets/js/shipid-public.js', array('jquery', 'wc-checkout'), '1.0', true);
 
-        wp_localize_script('shipid-public-js', 'shipidobj', array('url'=>admin_url( 'admin-ajax.php' )));
-    }
+    //     wp_localize_script('shipid-public-js', 'shipidobj', array('url'=>admin_url( 'admin-ajax.php' )));
+    // }
 
 
 
@@ -52,7 +49,6 @@ class Shipid extends WC_Shipping_Method {
 
         // Save settings in admin if you have any defined
         add_action( 'woocommerce_update_options_shipping_' . $this->id, array( $this, 'process_admin_options' ) );
-
     }
 
     /**
@@ -65,69 +61,71 @@ class Shipid extends WC_Shipping_Method {
 
         $this->form_fields = array(
             'enabled' => array(
-                            'title'         => __( 'Enable/Disable', 'woocommerce' ),
+                            'title'         => __( 'Enable/Disable', 'shipid' ),
                             'type'          => 'checkbox',
-                            'label'         => __( 'Enable this shipping method', 'woocommerce' ),
+                            'label'         => __( 'Enable this shipping method', 'shipid' ),
                             'default'       => 'no',
                             'id'            => 'shippid_enabled'
                         ),
             'title' => array(
-                            'title'         => __( 'Method Title', 'woocommerce' ),
+                            'title'         => __( 'Method Title', 'shipid' ),
                             'type'          => 'text',
-                            'description'   => __( 'This controls the title which the user sees during checkout.', 'woocommerce' ),
+                            'description'   => __( 'This controls the title which the user sees during checkout.', 'shipid' ),
                             'default'       => __( 'Shipid JNE', 'shipid' ),
                             'desc_tip'      => true,
                             'id'            => 'shippid_title'
                         ),
             'origin_prov' => array(
                             'title'         =>  __('Origin Province', 'shipid'),
-                            'type'          =>  'text',
-                            'description'   =>  __('This is the origin province of the seller.'),
+                            'type'          =>  'select',
+                            'description'   =>  __('This is the origin province of the seller.', 'shipid'),
                             'desc_tip'      =>  true,
                             'class'         =>  'origin_prov',
-                            'disabled'      =>  true,
-                            'id'            => 'shippid_origin_prov'
+                            // 'disabled'      =>  true,
+                            'id'            => 'shippid_origin_prov',
+                            'options'       => array($this->get_option('origin_prov') => $this->get_option('origin_prov'))
                         ),
             'origin_city' => array(
                             'title'         =>  __('Origin City', 'shipid'),
-                            'type'          =>  'text',
-                            'description'   =>  __('This is the origin city of the seller.'),
+                            'type'          =>  'select',
+                            'description'   =>  __('This is the origin city of the seller.', 'shipid'),
                             'desc_tip'      =>  true,
                             'class'         =>  'origin_city',
-                            'disabled'      =>  true,
-                            'id'            => 'shippid_origin_city'
+                            // 'disabled'      =>  true,
+                            'id'            => 'shippid_origin_city',
+                            'options'       => array($this->get_option('origin_city') => $this->get_option('origin_city'))
                         ),
-            'origin_prov_id' => array(
-                            'type'          =>  'hidden',
-                            'desc_tip'      =>  false,
-                            'class'         =>  'origin_prov_id',
-                            'id'            => 'shippid_origin_prov_id'
-                        ),
-            'origin_city_id' => array(
-                            'type'          =>  'hidden',
-                            'desc_tip'      =>  false,
-                            'class'         =>  'origin_city_id',
-                            'id'            => 'shippid_origin_city_id'
-                        ),
+            // 'origin_prov_id' => array(
+            //                 'type'          =>  'hidden',
+            //                 'desc_tip'      =>  false,
+            //                 'class'         =>  'origin_prov_id',
+            //                 'id'            => 'shippid_origin_prov_id'
+            //             ),
+            // 'origin_city_id' => array(
+            //                 'type'          =>  'hidden',
+            //                 'desc_tip'      =>  false,
+            //                 'class'         =>  'origin_city_id',
+            //                 'id'            => 'shippid_origin_city_id'
+            //             ),
             );
 
     }
 
-    function admin_assets() {
-        if ( !(isset($_GET['section']) && $_GET['section'] == 'shipid')) {
-            return;
-        }
+    // function admin_assets() {
+    //     if ( !(isset($_GET['section']) && $_GET['section'] == 'shipid')) {
+    //         return;
+    //     }
 
-        wp_enqueue_script('jquery-ui-autocomplete ');
-        wp_enqueue_script('shipid-admin', plugin_dir_url( __FILE__ ) . 'assets/js/shipid-admin.js', array('jquery', 'jquery-ui-autocomplete'));
-        wp_localize_script('shipid-admin', 'shipidobj', array('url'=>admin_url( 'admin-ajax.php' )));
+    //     wp_enqueue_script('jquery-ui-autocomplete ');
+    //     wp_enqueue_script('shipid-admin', plugin_dir_url( __FILE__ ) . 'assets/js/shipid-admin.js', array('jquery', 'jquery-ui-autocomplete'));
+    //     wp_localize_script('shipid-admin', 'shipidobj', array('url'=>admin_url( 'admin-ajax.php' )));
         
-    }
+    // }
 
     public function is_available( $package ) {
         $is_available = true;
         
-        if ( 'no' == $this->enabled ) {
+        if ( $this->enabled == 'no' ) {
             $is_available =  false;
         }
 
@@ -137,7 +135,6 @@ class Shipid extends WC_Shipping_Method {
 
         return apply_filters( 'woocommerce_shipping_' . $this->id . '_is_available', $is_available, $package );
     }
-
 
     /**
     * calculate_shipping function.
@@ -150,6 +147,8 @@ class Shipid extends WC_Shipping_Method {
         add_filter( 'woocommerce_shipping_calculator_enable_city', 'enable_city', 1, 1 );
 
         if($package['destination']['city'] != '') {
+            $origin_city = explode("+", $this->get_option('origin_city'));
+            $origin_city_id = $origin_city[0];
             
             $city = explode("+", $package['destination']['city']);
             $city_id = $city[0];
@@ -176,13 +175,9 @@ class Shipid extends WC_Shipping_Method {
                 CURLOPT_TIMEOUT => 30,
                 CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
                 CURLOPT_CUSTOMREQUEST => "POST",
-                CURLOPT_POSTFIELDS => "origin=" . $this->get_option('origin_city_id') . "&destination=" . $city_id . "&weight=" . $total_weight . "&courier=jne",
+                CURLOPT_POSTFIELDS => "origin=" . $origin_city_id . "&destination=" . $city_id . "&weight=" . $total_weight . "&courier=jne",
                 CURLOPT_HTTPHEADER => array(
-                    "key: " . $this->api_key,
-                    "origin"=>$this->get_option('origin_city'),
-                    "destination"=>$city_id,
-                    "weight"=>$total_weight,
-                    'courier'=>'jne'
+                    "key: " . RajaOngkirAccess::$api_key
                 ),
             ));
 
@@ -194,7 +189,7 @@ class Shipid extends WC_Shipping_Method {
             curl_close($curl);
 
             if ($err) {
-                wc_add_notice( 'Cannot contacting Raja Ongkir API, please try again later', 'error' ); 
+                wc_add_notice( __('Cannot contacting Raja Ongkir API, please try again later', 'shipid'), 'error' ); 
                 WC()->shipping->reset_shipping();
                 return;
             }
@@ -203,7 +198,7 @@ class Shipid extends WC_Shipping_Method {
             $method_option = array();
 
             if(empty($response_array->rajaongkir->results[0]->costs)) {
-                wc_add_notice( 'We cannot send to this location', 'error' ); 
+                wc_add_notice( __('We cannot send to this location', 'shipid'), 'error' ); 
                 WC()->shipping->reset_shipping();
                 return;
             }
@@ -232,7 +227,7 @@ class Shipid extends WC_Shipping_Method {
             
         }
         
-        wc_add_notice( 'Please set your city', 'error' ); 
+        wc_add_notice( __('Please set your city', 'shipid'), 'error' ); 
     }
 
 }

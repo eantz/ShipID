@@ -30,9 +30,8 @@ if ( ! defined( 'WPINC' ) ) {
     die;
 }
 
-
-require_once plugin_dir_path(__FILE__) . '../woocommerce/includes/abstracts/abstract-wc-settings-api.php';
-require_once plugin_dir_path(__FILE__) . '../woocommerce/includes/abstracts/abstract-wc-shipping-method.php';
+// RajaOngkir access class
+require_once plugin_dir_path(__FILE__) . 'rajaongkiraccess.class.php';
 
 /**
  * The code that runs during plugin activation.
@@ -40,7 +39,11 @@ require_once plugin_dir_path(__FILE__) . '../woocommerce/includes/abstracts/abst
  */
 function activate_shipid() {
     if ( !in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) ) {
-        die('Woocommerce is not active');
+        die(__('Woocommerce is not active', 'shipid'));
+    }
+
+    if(RajaOngkirAccess::$api_key == '') {
+        die(__('Please set your RajaOngkir API KEY', 'shipid'));
     }
 }
 
@@ -49,21 +52,17 @@ function activate_shipid() {
  * This action is documented in includes/class-shipid-deactivator.php
  */
 function deactivate_shipid() {
-    
+    delete_option('woocommerce_shipid_setting');
 }
-
-// global $woocommerce;
 
 register_activation_hook( __FILE__, 'activate_shipid' );
 register_deactivation_hook( __FILE__, 'deactivate_shipid' );
 
+
 /**
- * The core plugin class that is used to define internationalization,
- * dashboard-specific hooks, and public-facing site hooks.
+ * The core plugin class that is extending functionality of Woocommerce shipping
  */
 require plugin_dir_path( __FILE__ ) . 'shipid.class.php';
-
-
 
 
 /**
@@ -82,45 +81,35 @@ function run_shipid() {
     $plugin->api_key = $key;
     
     
-    
+    // disable woocommerce country select.
     wp_dequeue_script('wc-country-select');
     wp_enqueue_script('wc-country-select', plugin_dir_url(__FILE__) . 'assets/js/country-select.js');
     
-    wp_enqueue_script('shipid-admin-order', plugin_dir_url( __FILE__ ) . 'assets/js/shipid-admin.js', array('jquery', 'jquery-ui-autocomplete'));
+    // wp_enqueue_script('shipid-admin-order', plugin_dir_url( __FILE__ ) . 'assets/js/shipid-admin.js', array('jquery', 'jquery-ui-autocomplete'));
 }
 
 add_action( 'woocommerce_shipping_init', 'run_shipid' );
 
-function admin_assets() {
-    if ( isset($_GET['section']) && $_GET['section'] == 'shipid') {
-        wp_enqueue_script('jquery-ui-autocomplete ');
-        wp_enqueue_script('shipid-admin', plugin_dir_url( __FILE__ ) . 'assets/js/shipid-admin.js', array('jquery', 'jquery-ui-autocomplete'));
-        wp_localize_script('shipid-admin', 'shipidobj', array('url'=>admin_url( 'admin-ajax.php' )));
-    }
-    
-    wp_enqueue_script('shipid-admin-order', plugin_dir_url( __FILE__ ) . 'assets/js/shipid-admin-order.js', array('jquery'));
-    wp_localize_script('shipid-admin-order', 'shipidobj', array('url'=>admin_url( 'admin-ajax.php' )));
-    
-    wp_dequeue_script('wc-country-select');
-    wp_enqueue_script('wc-country-select', plugin_dir_url(__FILE__) . 'assets/js/country-select.js');
-    
-}
-
-add_action( 'admin_enqueue_scripts', 'admin_assets' );
-
+/*
+* Add shipping method in woocommerce shipping page
+*/
 function add_shipid_method( $methods ) {
-    $methods[] = 'Shipid'; 
+    $methods[] = 'ShipID'; 
     return $methods;
 }
 
 add_filter( 'woocommerce_shipping_methods', 'add_shipid_method' );
 
 
+/*
+* These functions and filter allow plugin to override woocommerce template,
+* just like in themes
+*
+* Credit : https://www.skyverge.com/blog/override-woocommerce-template-file-within-a-plugin/
+*/
 function myplugin_plugin_path() {
     return untrailingslashit( plugin_dir_path( __FILE__ ) );
 }
-
-add_filter( 'woocommerce_locate_template', 'shipid_locate_template', 10, 3 );
 
 function shipid_locate_template( $template, $template_name, $template_path ) {
  
@@ -133,7 +122,6 @@ function shipid_locate_template( $template, $template_name, $template_path ) {
     $plugin_path  = myplugin_plugin_path() . '/woocommerce/';
 
 
-
     // Look within passed path within the theme - this is priority
 
     $template = locate_template(
@@ -143,13 +131,9 @@ function shipid_locate_template( $template, $template_name, $template_path ) {
         )
     );
 
-
-
     // Modification: Get the template from this plugin, if it exists
     if ( ! $template && file_exists( $plugin_path . $template_name ) )
         $template = $plugin_path . $template_name;
-
-
 
     // Use default template
 
@@ -161,114 +145,69 @@ function shipid_locate_template( $template, $template_name, $template_path ) {
  
 }
 
+add_filter( 'woocommerce_locate_template', 'shipid_locate_template', 10, 3 );
+
+
+
+/*
+* Enqueue script for admin
+*/
+function admin_assets() {
+    // if ( isset($_GET['section']) && $_GET['section'] == 'shipid') {
+    //     wp_enqueue_script('jquery-ui-autocomplete ');
+    //     wp_enqueue_script('shipid-admin', plugin_dir_url( __FILE__ ) . 'assets/js/shipid-admin.js', array('jquery', 'jquery-ui-autocomplete'));
+    //     wp_localize_script('shipid-admin', 'shipidobj', array('url'=>admin_url( 'admin-ajax.php' )));
+    // }
+    
+    // wp_enqueue_script('shipid-admin-order', plugin_dir_url( __FILE__ ) . 'assets/js/shipid-admin-order.js', array('jquery'));
+    // wp_localize_script('shipid-admin-order', 'shipidobj', array('url'=>admin_url( 'admin-ajax.php' )));
+    
+    wp_dequeue_script('wc-country-select');
+    wp_enqueue_script('wc-country-select', plugin_dir_url(__FILE__) . 'assets/js/country-select.js');
+
+    wp_enqueue_script('shipid-admin', plugin_dir_url( __FILE__ ) . 'assets/js/shipid-admin.js', array('jquery', 'jquery-ui-autocomplete'), '1.0', true);
+    wp_localize_script('shipid-admin', 'shipidobj', array('url'=>admin_url( 'admin-ajax.php' )));
+    
+}
+
+add_action( 'admin_enqueue_scripts', 'admin_assets' );
+
+
+/*
+* Enqueue style and scripts for used in main page
+*/
 function public_assets($hook)
 {
+
     wp_enqueue_style('shipid-public-style', plugin_dir_url(__FILE__) . 'assets/css/shipid-public.css');
 
     wp_enqueue_script('shipid-public-js', plugin_dir_url(__FILE__) . 'assets/js/shipid-public.js', array('jquery'), '1.0', true);
-    // wp_enqueue_script('parallax', plugin_dir_url(__FILE__) . 'assets/js/parallax.js', array('jquery'), '1.3.1', true);
 
     wp_localize_script('shipid-public-js', 'shipidobj', array('url'=>admin_url( 'admin-ajax.php' )));
-    
-    
     
 }
 
 add_action( 'wp_enqueue_scripts', 'public_assets', 100 );
 
 
-function get_province() {
-    $curl = curl_init();
 
-    curl_setopt_array($curl, array(
-        CURLOPT_URL => "http://rajaongkir.com/api/starter/province",
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_ENCODING => "",
-        CURLOPT_MAXREDIRS => 10,
-        CURLOPT_TIMEOUT => 30,
-        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-        CURLOPT_CUSTOMREQUEST => "GET",
-        CURLOPT_HTTPHEADER => array(
-            "key: API_KEY_ANDA"
-        ),
-    ));
+/*
+* Register ajax handler for get_province
+*/
 
-    $response = curl_exec($curl);
-    $err = curl_error($curl);
+add_action('wp_ajax_shipid-get-province', array('RajaOngkirAccess', 'get_province'));
+add_action('wp_ajax_nopriv_shipid-get-province', array('RajaOngkirAccess', 'get_province'));
 
-    curl_close($curl);
-
-    if ($err) {
-        echo "cURL Error #:" . $err;
-    } else {
-        $response_array = json_decode($response);
-        $province = array();
-        foreach ($response_array->rajaongkir->results as $key => $val) {
-            $province[] = array(
-                'id'=>$val->province_id . '+' . $val->province,
-                'value'=>$val->province
-            );
-        }
-
-        echo json_encode($province);
-    }
-
-    wp_die();
-}
-
-add_action('wp_ajax_shipid-get-province', 'get_province');
-add_action('wp_ajax_nopriv_shipid-get-province', 'get_province');
+/*
+* Register ajax handler for get_city
+*/
+add_action('wp_ajax_shipid-get-city', array('RajaOngkirAccess', 'get_city'));
+add_action('wp_ajax_nopriv_shipid-get-city', array('RajaOngkirAccess', 'get_city'));
 
 
-function get_city() {
-    $province = explode('|', $_GET['province']);
-    $province_id = $province[0];
-    
-    $curl = curl_init();
-
-    curl_setopt_array($curl, array(
-        // CURLOPT_URL => "http://rajaongkir.com/api/starter/city?province=" . $_GET['province'],
-        CURLOPT_URL => "http://rajaongkir.com/api/starter/city?province=" . $province_id,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_ENCODING => "",
-        CURLOPT_MAXREDIRS => 10,
-        CURLOPT_TIMEOUT => 30,
-        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-        CURLOPT_CUSTOMREQUEST => "GET",
-        CURLOPT_HTTPHEADER => array(
-            "key: 91ecfdccb664c29f9a82115fbd674139"
-        ),
-    ));
-
-    $response = curl_exec($curl);
-    $err = curl_error($curl);
-
-    curl_close($curl);
-
-    if ($err) {
-        echo "cURL Error #:" . $err;
-    } else {
-        $response_array = json_decode($response);
-        $city = array();
-        foreach ($response_array->rajaongkir->results as $key => $val) {
-            $city[] = array(
-                'id'=>$val->city_id . '+' . $val->type . ' ' . $val->city_name,
-                'value'=>$val->type . ' ' . $val->city_name
-            );
-        }
-
-        echo json_encode($city);
-    }
-
-    
-
-    wp_die();
-}
-
-add_action('wp_ajax_shipid-get-city', 'get_city');
-add_action('wp_ajax_nopriv_shipid-get-city', 'get_city');
-
-
+/*
+* Register ajax handler for customer shipping location
+*/
 function get_selected_shipping_location() {
     $shipping_state = WC()->customer->get_shipping_state();
     $shipping_city = WC()->customer->get_shipping_city();
@@ -281,7 +220,24 @@ function get_selected_shipping_location() {
 add_action('wp_ajax_nopriv_shipid-get-selected-shipping-location', 'get_selected_shipping_location');
 add_action('wp_ajax_shipid-get-selected-shipping-location', 'get_selected_shipping_location');
 
+function get_selected_billing_location() {
+    $shipping_state = WC()->customer->get_state();
+    $shipping_city = WC()->customer->get_city();
 
+    $shipping_state = $shipping_state == '' ? WC()->customer->get_shipping_state() : $shipping_state;
+    $shipping_city = $shipping_city == '' ? WC()->customer->get_shipping_city() : $shipping_city;
+
+    echo json_encode(array('province'=>$shipping_state, 'city'=>$shipping_city));
+    
+    wp_die();
+}
+
+add_action('wp_ajax_nopriv_shippid-get-selected-billing-location', 'get_selected_billing_location');
+add_action('wp_ajax_shipid-get-selected-billing-location', 'get_selected_billing_location');
+
+/*
+* Allow user to select city in Shipping Calculator
+*/
 function enable_city($enable_reverse)
 {
     if(!$enable_reverse) {
@@ -292,61 +248,37 @@ function enable_city($enable_reverse)
 add_filter( 'woocommerce_shipping_calculator_enable_city', 'enable_city', 1, 1 );
 
 
-
+/*
+* Custom checkout fields
+*/
 function custom_checkout_fields($fields)
 {
     $new_fields = array();
 
-    foreach ($fields['billing'] as $k => $v) {
-        if($k == 'billing_city') {
-            
-            $new_fields['billing']['billing_state'] = array(
-                'type'=>'shipid_select',
-                'label'=>'Province',
-                'class'=>array('billing_state_opt'),
-                'required'=>true,
-                'clear'=>true 
-            );
-        } elseif($k == 'billing_state') {
-            
-            $new_fields['billing']['billing_city'] = array(
-                'type'=>'shipid_select',
-                'label'=>'City',
-                'class'=>array('billing_city_opt'),
-                'required'=>true,
-                'clear'=>true
-            );
+    foreach ($fields as $key => $val) {
+        if($key == 'billing' || $key == 'shipping') {
+            foreach ($val as $k => $v) {
+                if($k == $key . '_city') {
+                    $new_fields[$key][$key . '_state'] = array(
+                        'type'=>'shipid_select',
+                        'label'=>__('Province', 'shipid'),
+                        'class'=>array($key . '_state_opt'),
+                        'required'=>true,
+                        'clear'=>true 
+                    );
+                } elseif($k == $key . '_state') {
+                    $new_fields[$key][$key . '_city'] = array(
+                        'type'=>'shipid_select',
+                        'label'=>__('City', 'shipid'),
+                        'class'=>array($key . '_city_opt'),
+                        'required'=>true,
+                        'clear'=>true
+                    );
+                }
+
+                $new_fields[$key][$k] = $v;
+            }
         }
-            
-        $new_fields['billing'][$k] = $v;
-
-    }
-
-    foreach ($fields['shipping'] as $k => $v) {
-        if($k == 'shipping_city') {
-            
-            $new_fields['shipping']['shipping_state'] = array(
-                'type'=>'shipid_select',
-                'label'=>'Province',
-                'id'=>'shipping_state',
-                'class'=>array('shipping_state_opt'),
-                'required'=>true,
-                'clear'=>true
-            );
-        } elseif($k == 'shipping_state') {
-            
-            $new_fields['shipping']['shipping_city'] = array(
-                'type'=>'shipid_select',
-                'label'=>'City',
-                'id'=>'shipping_city',
-                'class'=>array('shipping_city_opt'),
-                'required'=>true,
-                'clear'=>true
-            );
-        }
-            
-        $new_fields['shipping'][$k] = $v;
-
     }
 
     unset($new_fields['billing']['billing_state']['validate']);
@@ -361,14 +293,9 @@ function custom_checkout_fields($fields)
 
 add_filter('woocommerce_checkout_fields', 'custom_checkout_fields');
 
-
-function shipid_hidden_fields($a, $key, $args, $value)
-{
-    echo '<input type="hidden" name="' . $key . '" id="' . $key . '">';
-}
-
-add_filter('woocommerce_form_field_shipid_hidden', 'shipid_hidden_fields', 10, 4);
-
+/*
+* Add new type for woocommerce field
+*/
 function shipid_select($a, $key, $args, $value)
 {
     $options = $field = '';
@@ -392,7 +319,12 @@ function shipid_select($a, $key, $args, $value)
 
 add_filter('woocommerce_form_field_shipid_select', 'shipid_select', 10, 4);
 
-function format_billing_address($address, $order) {
+
+
+/*
+* Format address to be displayed
+*/
+function format_address($address, $order) {
     $city = explode('+', $address['city']);
     $state = explode('+', $address['state']);
     $formatted = array(
@@ -411,31 +343,14 @@ function format_billing_address($address, $order) {
     
 }
 
-add_filter('woocommerce_order_formatted_billing_address', 'format_billing_address', 10, 2);
-
-function format_shipping_address($address, $order) {
-    $city = explode('+', $address['city']);
-    $state = explode('+', $address['state']);
-    $formatted = array(
-        'first_name'    => $address['first_name'],
-		'last_name'     => $address['last_name'],
-		'company'       => $address['company'],
-		'address_1'     => $address['address_1'],
-		'address_2'     => $address['address_2'],
-		'city'          => $city[1],
-		'state'         => $state[1],
-		'postcode'      => $address['postcode'],
-		'country'       => $address['country']
-	);
-
-	return $formatted;
-    
-}
-
-add_filter('woocommerce_order_formatted_shipping_address', 'format_shipping_address', 10, 2);
-add_filter('woocommerce_my_account_my_address_formatted_address', 'format_shipping_address', 10, 2);
+add_filter('woocommerce_order_formatted_billing_address', 'format_address', 10, 2);
+add_filter('woocommerce_order_formatted_shipping_address', 'format_address', 10, 2);
+add_filter('woocommerce_my_account_my_address_formatted_address', 'format_address', 10, 2);
 
 
+/*
+* Custom Billing fields in admin area
+*/
 function custom_admin_billing_fields($address) {
     global $thepostid, $post;
 
@@ -447,7 +362,6 @@ function custom_admin_billing_fields($address) {
             $new_address[$k] = $v;
         }
     }
-    
     
     $new_address['country'] = array(
         'label'=>'Country',
@@ -481,6 +395,10 @@ function custom_admin_billing_fields($address) {
 
 add_filter('woocommerce_admin_billing_fields', 'custom_admin_billing_fields', 10, 1);
 
+
+/*
+* Custom Shipping fields in admin area
+*/
 function custom_admin_shipping_fields($address) {
     global $thepostid, $post;
 
@@ -526,6 +444,10 @@ function custom_admin_shipping_fields($address) {
 
 add_filter('woocommerce_admin_shipping_fields', 'custom_admin_shipping_fields', 10, 1);
 
+
+/*
+* Custom address fields in My Account
+*/
 function custom_edit_address($address) {
     
     $type = 'billing';
@@ -569,13 +491,19 @@ function custom_edit_address($address) {
 
 add_filter('woocommerce_address_to_edit', 'custom_edit_address', 10, 1);
 
+
+/*
+* Custom customer profile fields
+*/
 function custom_customer_profile($address) {
     $current = array();
+
     $current['billing_city'] = explode('+', get_user_meta( $_GET['user_id'], 'billing_city', true ));
     $current['billing_state'] = explode('+', get_user_meta( $_GET['user_id'], 'billing_state', true ));
     $current['shipping_city'] = explode('+', get_user_meta( $_GET['user_id'], 'shipping_city', true ));
     $current['shipping_state'] = explode('+', get_user_meta( $_GET['user_id'], 'shipping_state', true ));
     
+
     $new_address = array();
     foreach($address as $k=>$v) {
         $type = $k;
@@ -605,8 +533,7 @@ function custom_customer_profile($address) {
         );
         
     }
-    
-    
+
     return $new_address;
 }
 add_filter('woocommerce_customer_meta_fields', 'custom_customer_profile', 10, 1);
