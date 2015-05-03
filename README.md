@@ -1,6 +1,7 @@
 # ShipID
 Woocommerce shipping plugin for Indonesian courier
 
+--------------------------------------------------------------
 So start from here, the docs will be in **Bahasa Indonesia**
 ---------------------------------------------------------------
 
@@ -32,8 +33,12 @@ public static $api_key = 'API_KEY_ANDA';
 ```
 
 Aktifkan plugin lewat halaman plugin di wordpress.
+
 Aktifkan shipping method lewat halaman Woocommerce -> Settings -> Shipping -> ShipID
 Pilih Propinsi dan Kota dari seller
+
+## Demo
+(http://demo.destiyadian.com/toko-laptop)
 
 
 ## TODO
